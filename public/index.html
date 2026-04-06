@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salon Command Center — WhatsApp Automation</title>
+  <meta name="description" content="Admin dashboard for WhatsApp Salon Automation System — manage bookings, test conversations, and monitor performance.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ============== Reset & Base ============== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a28;
+      --bg-card-hover: #222236;
+      --bg-input: #16162a;
+      --border: #2a2a44;
+      --border-glow: rgba(99, 102, 241, 0.3);
+
+      --text-primary: #f0f0f8;
+      --text-secondary: #9898b8;
+      --text-muted: #6868a8;
+
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+
+      --green: #22c55e;
+      --green-glow: rgba(34, 197, 94, 0.15);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.15);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.15);
+      --blue: #3b82f6;
+      --blue-glow: rgba(59, 130, 246, 0.15);
+      --purple: #a855f7;
+
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.06);
+
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ============== Background Ambiance ============== */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
+      animation: ambiance 20s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes ambiance {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      100% { transform: translate(-2%, -2%) rotate(3deg); }
+    }
+
+    /* ============== Layout ============== */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* ============== Header ============== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding: 20px 28px;
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .header-left h1 {
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-light), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .header-left p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    /* ============== Stats Grid ============== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .stat-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent), var(--purple)); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(90deg, var(--green), #16a34a); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(90deg, var(--amber), #d97706); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(90deg, var(--blue), #2563eb); }
+    .stat-card:nth-child(5)::before { background: linear-gradient(90deg, var(--red), #dc2626); }
+    .stat-card:nth-child(6)::before { background: linear-gradient(90deg, var(--purple), #9333ea); }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-glow);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* ============== Main Grid ============== */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ============== Panel ============== */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-body {
+      padding: 20px 24px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 500px;
+    }
+
+    /* ============== Chat Simulator ============== */
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 300px;
+    }
+
+    .chat-msg {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      animation: msgIn 0.3s ease-out;
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+
+    .chat-msg.bot {
+      align-self: flex-start;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-bottom-left-radius: 6px;
+    }
+
+    .chat-msg.bot strong, .chat-msg.bot b {
+      color: var(--accent-light);
+    }
+
+    .chat-input-wrap {
+      display: flex;
+      gap: 10px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ============== Buttons ============== */
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 12px;
+      border-radius: var(--radius-xs);
+    }
+
+    /* ============== Booking List ============== */
+    .booking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+      transition: var(--transition);
+    }
+
+    .booking-item:hover {
+      border-color: var(--border-glow);
+      background: var(--bg-card-hover);
+    }
+
+    .booking-info h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .booking-info p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .booking-status {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .status-confirmed {
+      background: var(--green-glow);
+      color: var(--green);
+    }
+
+    .status-pending {
+      background: var(--amber-glow);
+      color: var(--amber);
+    }
+
+    .status-completed {
+      background: var(--blue-glow);
+      color: var(--blue);
+    }
+
+    .status-cancelled {
+      background: var(--red-glow);
+      color: var(--red);
+    }
+
+    /* ============== Empty State ============== */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .emoji {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* ============== Service Config ============== */
+    .service-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .service-item:last-child {
+      border-bottom: none;
+    }
+
+    .service-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .service-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* ============== Quick Actions ============== */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .action-btn {
+      padding: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .action-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .action-btn .emoji {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .action-btn .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ============== Scrollbar ============== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ============== Full Width Panel ============== */
+    .full-width {
+      grid-column: 1 / -1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <h1>💈 Salon Command Center</h1>
+      <p id="salonName">WhatsApp Automation Dashboard</p>
+    </div>
+    <div class="header-right">
+      <div class="status-dot"></div>
+      <span class="status-text">System Active</span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <section class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Total Bookings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="statConfirmed">0</div>
+      <div class="stat-label">Confirmed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-value" id="statPending">0</div>
+      <div class="stat-label">Pending Payment</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏁</div>
+      <div class="stat-value" id="statCompleted">0</div>
+      <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">❌</div>
+      <div class="stat-value" id="statCancelled">0</div>
+      <div class="stat-label">Cancelled</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-value" id="statRevenue">₹0</div>
+      <div class="stat-label">Total Revenue</div>
+    </div>
+  </section>
+
+  <!-- Main Panels -->
+  <div class="main-grid">
+
+    <!-- Chat Simulator -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>💬 Chat Simulator</h2>
+        <button class="btn btn-secondary btn-sm" onclick="resetChat()">Reset</button>
+      </div>
+      <div class="panel-body" id="chatMessages">
+        <div class="chat-messages" id="chatContainer">
+          <div class="chat-msg bot">Welcome! 👋 Use this simulator to test the chatbot flow.
+
+Type any message to begin (e.g. "hi" or "1").</div>
+        </div>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." autocomplete="off">
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+    <!-- Bookings Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>📅 Recent Bookings</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadBookings()">Refresh</button>
+      </div>
+      <div class="panel-body" id="bookingsPanel">
+        <div class="empty-state">
+          <div class="emoji">📭</div>
+          <p>No bookings yet. Test the chatbot to create one!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Services Config -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>💇 Services & Pricing</h2>
+      </div>
+      <div class="panel-body" id="servicesPanel">
+        <div class="empty-state">
+          <div class="emoji">⏳</div>
+          <p>Loading services...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>⚡ Quick Actions</h2>
+      </div>
+      <div class="panel-body">
+        <div class="quick-actions">
+          <div class="action-btn" onclick="loadStats()">
+            <div class="emoji">📊</div>
+            <div class="label">Refresh Stats</div>
+          </div>
+          <div class="action-btn" onclick="loadSessions()">
+            <div class="emoji">👥</div>
+            <div class="label">Active Sessions</div>
+          </div>
+          <div class="action-btn" onclick="testWebhook()">
+            <div class="emoji">🔗</div>
+            <div class="label">Test Webhook</div>
+          </div>
+          <div class="action-btn" onclick="viewHealth()">
+            <div class="emoji">🏥</div>
+            <div class="label">Health Check</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ---- Simulator Phone Number ----
+  const SIM_PHONE = '+919999999999';
+  const SIM_NAME = 'Dashboard User';
+
+  // ---- Load initial data ----
+  window.addEventListener('DOMContentLoaded', () => {
+    loadStats();
+    loadConfig();
+    loadBookings();
+
+    // Enter key sends message
+    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  });
+
+  // ---- Chat Simulator ----
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    appendChat('user', msg);
+    input.value = '';
+
+    try {
+      const res = await fetch('/api/test/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: SIM_PHONE, message: msg, name: SIM_NAME }),
+      });
+
+      const data = await res.json();
+      if (data.reply) {
+        // Simulate typing delay
+        setTimeout(() => {
+          appendChat('bot', data.reply);
+        }, 500);
+      }
+
+      // Refresh stats & bookings
+      setTimeout(() => {
+        loadStats();
+        loadBookings();
+      }, 1000);
+    } catch (err) {
+      appendChat('bot', '❌ Error: ' + err.message);
+    }
+  }
+
+  function appendChat(type, text) {
+    const container = document.getElementById('chatContainer');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${type}`;
+
+    // Format bold text (WhatsApp style *bold*)
+    const formatted = text.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+    div.innerHTML = formatted;
+
+    container.appendChild(div);
+
+    // Scroll to bottom
+    const panel = document.getElementById('chatMessages');
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function resetChat() {
+    document.getElementById('chatContainer').innerHTML =
+      '<div class="chat-msg bot">Chat reset! 🔄 Type any message to begin.</div>';
+
+    // Reset the session on the server
+    fetch('/api/test/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: SIM_PHONE, message: '__reset__', name: SIM_NAME }),
+    }).catch(() => {});
+  }
+
+  // ---- Stats ----
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/admin/stats');
+      const data = await res.json();
+
+      document.getElementById('statTotal').textContent = data.total || 0;
+      document.getElementById('statConfirmed').textContent = data.confirmed || 0;
+      document.getElementById('statPending').textContent = data.pendingPayment || 0;
+      document.getElementById('statCompleted').textContent = data.completed || 0;
+      document.getElementById('statCancelled').textContent = data.cancelled || 0;
+      document.getElementById('statRevenue').textContent = '₹' + (data.totalRevenue || 0).toLocaleString();
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  }
+
+  // ---- Config ----
+  async function loadConfig() {
+    try {
+      const res = await fetch('/api/admin/config');
+      const data = await res.json();
+
+      document.getElementById('salonName').textContent = data.name + ' — WhatsApp Automation';
+
+      const panel = document.getElementById('servicesPanel');
+      if (data.services && data.services.length) {
+        panel.innerHTML = data.services
+          .map(s => `
+            <div class="service-item">
+              <div class="service-name">
+                <span>${s.emoji}</span>
+                <span>${s.name}</span>
+              </div>
+              <span class="service-price">₹${s.price}</span>
+            </div>
+          `)
+          .join('');
+      }
+    } catch (err) {
+      console.error('Failed to load config:', err);
+    }
+  }
+
+  // ---- Bookings ----
+  async function loadBookings() {
+    try {
+      const res = await fetch('/api/admin/bookings');
+      const data = await res.json();
+
+      const panel = document.getElementById('bookingsPanel');
+
+      if (!data.bookings || data.bookings.length === 0) {
+        panel.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>No bookings yet.</p></div>';
+        return;
+      }
+
+      const statusClass = (s) => {
+        switch (s) {
+          case 'confirmed': return 'status-confirmed';
+          case 'pending_payment': return 'status-pending';
+          case 'completed': return 'status-completed';
+          case 'cancelled': return 'status-cancelled';
+          default: return 'status-pending';
+        }
+      };
+
+      panel.innerHTML = data.bookings
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 20)
+        .map(b => `
+          <div class="booking-item">
+            <div class="booking-info">
+              <h3>${b.customerName} — ${b.serviceName}</h3>
+              <p>📅 ${b.date} at ${b.time} | 💰 ₹${b.price}</p>
+            </div>
+            <span class="booking-status ${statusClass(b.status)}">${b.status.replace('_', ' ')}</span>
+          </div>
+        `)
+        .join('');
+    } catch (err) {
+      console.error('Failed to load bookings:', err);
+    }
+  }
+
+  // ---- Quick Actions ----
+  async function loadSessions() {
+    try {
+      const res = await fetch('/api/admin/sessions');
+      const data = await res.json();
+      const count = Object.keys(data).length;
+      alert(`Active Sessions: ${count}\n\n${JSON.stringify(data, null, 2).substring(0, 500)}`);
+    } catch (err) {
+      alert('Failed to load sessions');
+    }
+  }
+
+  async function testWebhook() {
+    try {
+      const res = await fetch('/api/webhook');
+      const data = await res.json();
+      alert('Webhook Status: ' + JSON.stringify(data));
+    } catch (err) {
+      alert('Webhook test failed: ' + err.message);
+    }
+  }
+
+  async function viewHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      alert('Health: ' + JSON.stringify(data, null, 2));
+    } catch (err) {
+      alert('Health check failed: ' + err.message);
+    }
+  }
+</script>
+
+</body>
+</html>
