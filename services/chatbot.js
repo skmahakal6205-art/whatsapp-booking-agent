@@ -11,6 +11,7 @@ const calendarService = require('./calendar');
 const crmService = require('./crm');
 const paymentService = require('./payment');
 const whatsapp = require('./whatsapp');
+const gemini = require('./gemini');
 const messages = require('../config/messages');
 const salonConfig = require('../config/salon');
 const { INTENT, detectIntent, detectService, detectDate, detectTime, detectBookingDetails } = require('./intent');
@@ -73,6 +74,17 @@ async function processMessage(from, message, profileName) {
 
 function getBookingDetails(message) {
   return detectBookingDetails(message);
+}
+
+async function getGeminiAnalysis(message) {
+  if (!gemini.isEnabled()) return null;
+
+  try {
+    return await gemini.parseBookingIntent(message);
+  } catch (err) {
+    console.warn('[Gemini] parse failed:', err.message);
+    return null;
+  }
 }
 
 async function startBookingFlow(from, message, session, details) {
@@ -155,6 +167,33 @@ async function handleWelcome(from, message, session) {
     return await startBookingFlow(from, message, session, bookingDetails);
   }
 
+  if (intent === INTENT.UNKNOWN) {
+    const aiResult = await getGeminiAnalysis(message);
+
+    if (aiResult) {
+      if (aiResult.intent === INTENT.SERVICES) {
+        return messages.servicesList();
+      }
+
+      if (aiResult.intent === INTENT.HUMAN) {
+        return await initiateHumanHandoff(from, session);
+      }
+
+      if (
+        aiResult.intent === INTENT.BOOK ||
+        aiResult.service ||
+        aiResult.date ||
+        aiResult.time
+      ) {
+        return await startBookingFlow(from, message, session, {
+          service: aiResult.service ? salonConfig.findService(aiResult.service) : null,
+          date: aiResult.date,
+          time: aiResult.time,
+        });
+      }
+    }
+  }
+
   switch (intent) {
     case INTENT.SERVICES:
       // Stay in WELCOME state after showing services
@@ -199,7 +238,14 @@ async function handleAskName(from, message, session) {
 }
 
 async function handleAskService(from, message, session) {
-  const service = detectService(message);
+  let service = detectService(message);
+
+  if (!service) {
+    const aiResult = await getGeminiAnalysis(message);
+    if (aiResult?.service) {
+      service = salonConfig.findService(aiResult.service);
+    }
+  }
 
   if (!service) {
     return messages.invalidService();
@@ -217,7 +263,14 @@ async function handleAskService(from, message, session) {
 }
 
 async function handleAskDate(from, message, session) {
-  const date = detectDate(message);
+  let date = detectDate(message);
+
+  if (!date) {
+    const aiResult = await getGeminiAnalysis(message);
+    if (aiResult?.date) {
+      date = aiResult.date;
+    }
+  }
 
   if (!date) {
     return messages.invalidDate;
@@ -232,7 +285,14 @@ async function handleAskDate(from, message, session) {
 }
 
 async function handleAskTime(from, message, session) {
-  const time = detectTime(message);
+  let time = detectTime(message);
+
+  if (!time) {
+    const aiResult = await getGeminiAnalysis(message);
+    if (aiResult?.time) {
+      time = aiResult.time;
+    }
+  }
 
   if (!time) {
     return messages.invalidTime;
